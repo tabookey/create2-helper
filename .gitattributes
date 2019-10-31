@@ -1,0 +1,4 @@
+*.sol linguist-language=Solidity
+*.sol ident
+*.js ident
+*.html ident

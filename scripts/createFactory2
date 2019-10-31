@@ -1,0 +1,102 @@
+#!/usr/bin/env node
+//a script to create a contract factory from its compiled JSON file.
+// (json is either truffle-compiled contract, or just the ABI json. in the latter case, the
+//  file name is used as contract name)
+fs=require('fs')
+
+let solver = "^0.5.10";
+
+//name of "constructor" method.
+let ctor="ctor";
+
+//name of "salt" parameter (to avoid overlap with constructor param name)
+let salt="salt";
+
+let jsonFile = process.argv[2]
+
+if ( !jsonFile ) {
+    console.log( "usage: npx createFactory2 {contract-json} [output file]")
+    process.exit(1)
+}
+
+let outputFile = process.argv[3]
+
+let json = JSON.parse(fs.readFileSync(jsonFile).toString())
+
+if ( json[0] && json[0].type ) {
+    //input is just ABI. extract contract name from file
+    abi = json
+    contractName = jsonFile.match(/(\w+)(?:\.\w+)?$/ )[0]
+} else {
+    
+    abi = json.abi
+    contractName=json.contractName
+    if ( !abi || !contractName ) {
+        console.log( "not a valid compiled contract: ", jsonFile )
+        process.exit(1)
+    }
+}
+
+let name = contractName
+let ctr = abi.find( x=>x.type=='constructor' )
+let paramList
+if ( !ctr ) {
+    paramsList = []
+} else {
+    let ctrParams = ctr.inputs
+
+    //add "_" prefix if there is another constructor param named "salt"...
+    while ( ctrParams.find(p=>p.name == salt) ) {
+        salt="_"+salt;
+    }
+
+    paramList = ctrParams.map( n=> `${n.type} ${n.name}` )
+}    
+
+let params=["uint "+salt, ...paramList].join( ", ")
+
+generated = `
+pragma solidity ${solver};
+
+//This file was auto-generated on ${new Date()}
+//Source file: ${jsonFile}
+import "@tabookey/factory2-helper/contracts/Factory2.sol";
+
+/*
+    Helper Factory to create class "${name}" using create2
+    For a given salt value and constructor param, getAddress will always return the same address.
+    The ${ctor} method will create the object at that same address, exactly once
+    (and revert if called again)
+
+USAGE: 
+
+    I${name}Factory factory = ${name}Factory.create();
+    address toBeCreated = factory.getAddress(salt, <constructor params> );
+    ${name} newObj = factory.ctor(salt, <constructor params>);
+    require( address(newObj) == toBeCreated );
+ */
+
+interface I${name}Factory {
+    function ${ctor}(${params}) external returns (${name});
+    function getAddress(${params}) view external returns (address);
+}
+
+library ${name}Factory {
+    function create() internal returns (I${name}Factory) {
+        return I${name}Factory(address(new Factory2( type(${name}).creationCode, I${name}Factory(0).${ctor}.selector)));
+    }
+}
+`
+
+if ( outputFile && outputFile!= "-" ) {
+    if ( fs.existsSync(outputFile) ) {
+        console.log( "output file", outputFile,"already exists. NOT overwriting.")
+        process.exit(1)
+    }
+    console.log( "writing to", outputFile)
+    fs.writeFileSync(outputFile, generated)
+} else {
+    process.stdout.write(generated);    
+}
+
+
