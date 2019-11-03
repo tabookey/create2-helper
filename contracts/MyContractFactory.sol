@@ -1,9 +1,11 @@
-//This file was auto-generated on Sun Nov 03 2019 13:55:52 GMT+0200 (Israel Standard Time)
-//Source file: ./build/contracts/MyContract.json
+//This file was auto-generated on Sun Nov 03 2019 18:59:53 GMT+0200 (Israel Standard Time)
+//Source file: build/contracts/MyContract.json
 
 pragma solidity ^0.5.8;
 
-import "@tabookey/create2-helper/contracts/Factory2.sol";
+//manually modified, to access this source code rather than our NPM package...
+import "./Factory2.sol";
+//import "@tabookey/create2-helper/contracts/Factory2.sol";
 import "./MyContract.sol";
 
 /*
@@ -16,15 +18,15 @@ import "./MyContract.sol";
 USAGE: 
 
     IMyContractFactory factory = MyContractFactory.createFactory();
-    address toBeCreated = factory.getAddress(_name);
-    MyContract newObj = factory.create(_name);
+    address toBeCreated = factory.getAddress(_name, _age);
+    MyContract newObj = factory.create(_name, _age);
     require( address(newObj) == toBeCreated );
  */
 
 interface IMyContractFactory {
     
-    function create(string calldata _name) external returns (MyContract);
-    function getAddress(string calldata _name) view external returns (address);
+    function create(string calldata _name, uint256 _age) external returns (MyContract);
+    function getAddress(string calldata _name, uint256 _age) view external returns (address);
     function setSalt(uint salt) external returns (IMyContractFactory);
 }
 

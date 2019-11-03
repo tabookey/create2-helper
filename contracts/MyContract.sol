@@ -4,13 +4,15 @@ pragma solidity ^0.5.8;
 // it has some constructor parameters that define its state.
 contract MyContract {
     string public name;
+    uint public age;
 
-    event Created(string a);
- 
-    constructor(string memory _name) public {
+    event Created(string name, uint age);
 
-        name=_name;
-        emit Created(name);
+    constructor(string memory _name, uint _age) public {
+
+        name = _name;
+        age = _age;
+        emit Created(name, age);
     }
 }
 

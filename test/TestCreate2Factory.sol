@@ -2,49 +2,50 @@ pragma solidity ^0.5.8;
 import "../contracts/MyContract.sol";
 import "../contracts/MyContractFactory.sol";
 
-
-
-contract testfactory {
+contract TestCreate2Factory {
     using Address for address;
 
-    IMyContractFactory fact;
+    uint count;
+    IMyContractFactory public fact;
     address addr;
     MyContract obj;
-    function testCreateFactory() public {
+    
+    constructor() public {
         fact = MyContractFactory.createFactory();
     }
 
     function testGetAddrBeforeCreate() public {
-        addr = fact.getAddress("hello");
+        addr = fact.getAddress("hello",1);
         require( !addr.isContract(), "getAddress should return address before deployment");
     }
 
     function testCreateObj() public {
-        obj = fact.create("hello");
+        obj = fact.create("hello",1);
         require( address(obj).isContract(), "create should return address of real object");
         require( address(obj)==addr, "create should return the same address as getAddress()" );
     }
 
     function testParamsAffectAddress() public {
-        address addr2 = fact.getAddress("world");
+        count++;
+        address addr2 = fact.getAddress("world",1);
         require( addr2!= addr, "different params nonce should return different address");
     }
 
 
-    function testCreateAgain() public {
-        require( address(fact.create("hello")) == address(0), "create should fail when called again" );
+    function testCreateAgain_fails() public {
+        count++;
+        require( address(fact.create("hello",1)) == address(0), "create should fail when called again" );
     }
 
-    function testGetAddressAgain() public {
-        (this);
-        require( fact.getAddress("hello") == addr, "getAddress should return same address even after creation");
+    function testGetAddressAgain_sameaddr() public {
+        count++;
+        require( fact.getAddress("hello",1) == addr, "getAddress should return same address even after creation");
     }
 
-    function testGetAddressNewSalt() public {
-        address addr2 = fact.setSalt(1).getAddress("hello");
+    function testGetAddressNewSalt_newaddress() public {
+        address addr2 = fact.setSalt(1).getAddress("hello",1);
         require( addr2!= addr, "new nonce should return different address");
     }
-
 
 }
 
