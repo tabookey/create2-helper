@@ -6,7 +6,6 @@
   "author": "Dror Tirosh <dror@tabookey.com>",
   "license": "MIT",
   "dependencies": {
-    "@0x/contracts-utils": "^3.2.4",
     "@openzeppelin/contracts": "^2.4.0",
     "yargs": "^14.2.0"
   },

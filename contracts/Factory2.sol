@@ -1,26 +1,27 @@
 pragma solidity ^0.5.8;
-import "@0x/contracts-utils/contracts/src/LibBytes.sol";
+
+//import "@0x/contracts-utils/contracts/src/LibBytes.sol";
+//copied locally, to reduce huge library dependency tree
+import "./0x_contracts-utils/LibBytes.sol";
 
 /*
- * Helper class for creating contracts with create2
+ * Helper contract for creating contracts with create2
  * usage:
- *  use the helper script "genFactory2 <mycontract.abi>". It will generate a file name MyContractFactory.sol,
+ *  use the helper script "createFactory2 <MyContract.abi>". It will generate a file name MyContractFactory.sol,
  *  with a method MyContractFactory.create() to create the factory.
  * The returned factory object has 2 methods:
  *  create() - a method to create a new MyContract instance.
  *  getAddress() - a method to return the same address as "create()" - even before it is created.
- * The generated object depends on the constructor paramters and salt. Both methods have "salt" as first parameter,
- * and all other paramters are passed as-is to the contract's constructor.
  */
 contract Factory2 {
 
     using LibBytes for bytes;
     bytes creationCode;
-    bytes4 ctrSelector;
+    bytes4 ctorSelector;
 
-    constructor(bytes memory _creationCode, bytes4 _ctrSelector) public {
+    constructor(bytes memory _creationCode, bytes4 _ctorSelector) public {
         creationCode = _creationCode;
-        ctrSelector = _ctrSelector;
+        ctorSelector = _ctorSelector;
     }
 
     uint public salt;
@@ -40,7 +41,7 @@ contract Factory2 {
     function () external {
 
         address addr;
-        if ( msg.sig == ctrSelector ) {
+        if ( msg.sig == ctorSelector ) {
             addr = callCreate2(msg.data);
         } else {
             addr = calculateCreate2Address(msg.data);
