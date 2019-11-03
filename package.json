@@ -1,6 +1,6 @@
 {
   "name": "@tabookey/create2-helper",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Easily use CREATE2 from Solidity",
   "repository": "https://github.com/tabookey/create2-helper",
   "author": "Dror Tirosh <dror@tabookey.com>",
