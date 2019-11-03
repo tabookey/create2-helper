@@ -1,6 +1,6 @@
 {
   "name": "@tabookey/create2-helper",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Easily use CREATE2 from Solidity",
   "repository": "https://github.com/tabookey/create2-helper",
   "author": "Dror Tirosh <dror@tabookey.com>",
@@ -14,7 +14,8 @@
     "truffle": "^5.0.42"
   },
   "files": [
-    "contracts/Factory2.sol",
+    "contracts",
+    "!contracts/MyContract*",
     "scripts"
   ],
   "bin": {
