@@ -2,7 +2,6 @@
   "name": "@tabookey/create2-helper",
   "version": "0.1.0",
   "description": "Easily use CREATE2 from Solidity",
-  "main": "index.js",
   "repository": "https://github.com/tabookey/create2-helper",
   "author": "Dror Tirosh <dror@tabookey.com>",
   "license": "MIT",
@@ -14,6 +13,13 @@
     "solc": "^0.5.12",
     "truffle": "^5.0.42",
     "yargs": "^14.2.0"
+  },
+  "files": [
+    "contracts/Factory2.sol",
+    "scripts"
+  ],
+  "bin": {
+    "createFactory2": "./scripts/createFactory2"
   },
   "scripts": {
     "test": "truffle test"

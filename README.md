@@ -54,19 +54,21 @@ contract Sample {
 }
 ```
 
-## Creating the factory 
+## Usage:
 
-But how do we create the above `MyContractFactory` and its interface ?
-
-The `IMyContractFactory` interface has 2 methods `create` and `getAddress`, both with the same parameters list of the constructor.
-
-The `MyContractFactory.createFactory` function created with the help of `Factory2` helper contract, described below.
-
-But you don’t have to create these yourself: We provided a tool `createFactory2` , to create the factory classes for 
-each of your contracts.
+1. Create your contract (e.g `MyContract` )
+1. Compile it with: `truffle compile`
+1. Add this library with `yarn add @tabookey/create2-helper`
+    (or `npm install`)
+1. Create factory with: `npx createFactory2 ./build/contracts/MyContract.json > contracts/MyContractFactory.json`
+1. Add a code to create the factory: `IMyContractFactory fact = MyContractFactory.createFactory()`
+    note that you need to keep this factory object, since generated addresses depend on it too.
+1. Use the factory whenever you want the future address: `fact.getAddress(...)` 
+1. .. or actually to create an instance: `fact.create(...)`      
 
 Note that you would usually use this tool exactly once for your contract - or when you change the 
-**constructor parameters**. You don't have to re-generate it when the code of the contract is modified.
+**constructor parameters**. 
+You don't have to re-generate it when the code of the contract is modified (or even with added/removed methods)
  
 ## Some salt and pepper…
 
