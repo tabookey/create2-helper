@@ -4,12 +4,13 @@
   "description": "Easily use CREATE2 from Solidity",
   "main": "index.js",
   "repository": "https://github.com/tabookey/create2-helper",
-  "author": "dror@tabookey.com",
+  "author": "Dror Tirosh <dror@tabookey.com>",
   "license": "MIT",
   "dependencies": {
     "@0x/contracts-utils": "^3.2.4",
     "solc": "^0.5.12",
-    "truffle": "^5.0.42"
+    "truffle": "^5.0.42",
+    "yargs": "^14.2.0"
   },
   "devDependencies": {
     "@openzeppelin/contracts": "^2.4.0",

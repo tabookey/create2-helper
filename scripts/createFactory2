@@ -1,95 +1,123 @@
 #!/usr/bin/env node
-//a script to create a contract factory from its compiled JSON file.
+//a script to create a contract factory from its solidity source/compiled JSON file.
 // (json is either truffle-compiled contract, or just the ABI json. in the latter case, the
 //  file name is used as contract name)
-fs=require('fs')
+fs=require('fs');
 
-let solver = "^0.5.10";
+let argv = require('yargs')
+        .usage( "Usage: npx $0 {json} [output-file] <options>" )
+        .demandCommand(1)
+        .describe( 'n', "contract name (default to ABI filename)" )
+        .describe( 'f', "generated 'factory' library name (defaults to <contract-name>Factory" )
+        .describe( 'i', "generated 'factory interface' class (defaults to I<factory-name>" )
+        .describe( 'v', "pragma solidity version" )
+        .describe( 'c', "generated 'create' method name" )
+        .describe( 'F', "force - allow overwrite existing output file" )
+        .describe( 'I', "imported file - defaults to \"./<contract-name.sol\"")
+        .describe( 'S', "use salt param instead of setSalt method")
+        .defaults({
+            v:"^0.5.8",
+            c:"create"
+        })
+        .argv;
+
 
 //name of "constructor" method.
-let ctor="ctor";
+let ctor= argv.c;
+let solver = argv.v;
+let useSaltParam = argv.S
 
-//name of "salt" parameter (to avoid overlap with constructor param name)
-let salt="salt";
+let inFile = argv._[0]
 
-let jsonFile = process.argv[2]
+let outputFile = argv._[1] || '-'
 
-if ( !jsonFile ) {
-    console.log( "usage: npx createFactory2 {contract-json} [output file]")
-    process.exit(1)
-}
-
-let outputFile = process.argv[3]
-
-let json = JSON.parse(fs.readFileSync(jsonFile).toString())
+let json = JSON.parse(fs.readFileSync(inFile).toString())
 
 if ( json[0] && json[0].type ) {
     //input is just ABI. extract contract name from file
     abi = json
-    contractName = jsonFile.match(/(\w+)(?:\.\w+)?$/ )[0]
+    contractName = inFile.match(/(\w+)(?:\.\w+)?$/ )[0]
 } else {
     
     abi = json.abi
     contractName=json.contractName
     if ( !abi || !contractName ) {
-        console.log( "not a valid compiled contract: ", jsonFile )
+        console.log( "not a valid compiled contract: ", inFile )
         process.exit(1)
     }
 }
 
-let name = contractName
-let ctr = abi.find( x=>x.type=='constructor' )
-let paramList
-if ( !ctr ) {
-    paramsList = []
+function typename(type,name) {
+	dynamictype = /^(string|bytes|.*\[.*\])$/;
+	return  type+" " +
+		( type.match(dynamictype) ? "calldata ":"" )+
+		name
+}
+
+let name = argv.n || contractName
+let factory = argv.f || name+'Factory'
+let xface = argv.i || "I"+factory
+let importfile = argv.I || `./${name}.sol`
+let ctr = abi.find( x=>x.type=='constructor' ) || {inputs:[]}
+let ctrParams = ctr.inputs
+
+if ( useSaltParam ) {
+    //add extra parameter. ignored by constructor, but used as salt to the generated
+    // address
+    saltParam = "salt";
+    while ( ctrParams.find(p=>p.name==saltParam) )
+        saltParam = "_"+saltParam;
+
+    ctrParams.push( {type:"uint", name:saltParam} )
+    saltParamComment=`\n    //NOTE: ${saltParam} is not a real constructor param. added only to add "salt" to the generated address.`
+    saltMethod="";
 } else {
-    let ctrParams = ctr.inputs
+    saltParamComment=""
+    saltMethod=`    function setSalt(uint salt) external returns (${xface});`
+}
 
-    //add "_" prefix if there is another constructor param named "salt"...
-    while ( ctrParams.find(p=>p.name == salt) ) {
-        salt="_"+salt;
-    }
+let paramTypes = ctrParams.map( n=> typename(n.type, n.name) ).join( ", ")
+let paramNames = ctrParams.map( n=> n.name ).join( ", ")
 
-    paramList = ctrParams.map( n=> `${n.type} ${n.name}` )
-}    
+generated = `//This file was auto-generated on ${new Date()}
+//Source file: ${inFile}
 
-let params=["uint "+salt, ...paramList].join( ", ")
-
-generated = `
 pragma solidity ${solver};
 
-//This file was auto-generated on ${new Date()}
-//Source file: ${jsonFile}
-import "@tabookey/factory2-helper/contracts/Factory2.sol";
+import "@tabookey/create2-helper/contracts/Factory2.sol";
+import "${importfile}";
 
 /*
     Helper Factory to create class "${name}" using create2
-    For a given salt value and constructor param, getAddress will always return the same address.
+    For a given list of constructor param, getAddress will always return the same address.
     The ${ctor} method will create the object at that same address, exactly once
     (and revert if called again)
+    For more information, https://github.com/tabookey/create2-helper
 
 USAGE: 
 
-    I${name}Factory factory = ${name}Factory.create();
-    address toBeCreated = factory.getAddress(salt, <constructor params> );
-    ${name} newObj = factory.ctor(salt, <constructor params>);
+    ${xface} factory = ${factory}.createFactory();
+    address toBeCreated = factory.getAddress(${paramNames});
+    ${name} newObj = factory.${ctor}(${paramNames});
     require( address(newObj) == toBeCreated );
  */
 
-interface I${name}Factory {
-    function ${ctor}(${params}) external returns (${name});
-    function getAddress(${params}) view external returns (address);
+interface ${xface} {
+${saltParamComment}    
+    function ${ctor}(${paramTypes}) external returns (${name});
+    function getAddress(${paramTypes}) view external returns (address);
+${saltMethod}
 }
 
-library ${name}Factory {
-    function create() internal returns (I${name}Factory) {
-        return I${name}Factory(address(new Factory2( type(${name}).creationCode, I${name}Factory(0).${ctor}.selector)));
+library ${factory} {
+    function createFactory() internal returns (${xface}) {
+        return ${xface}(address(new Factory2( type(${name}).creationCode, ${xface}(0).${ctor}.selector)));
     }
 }
 `
 
 if ( outputFile && outputFile!= "-" ) {
-    if ( fs.existsSync(outputFile) ) {
+    if ( ! argv.F && fs.existsSync(outputFile) ) {
         console.log( "output file", outputFile,"already exists. NOT overwriting.")
         process.exit(1)
     }
