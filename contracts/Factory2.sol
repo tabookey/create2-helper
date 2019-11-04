@@ -15,7 +15,7 @@ import "./0x_contracts-utils/LibBytes.sol";
  */
 contract Factory2 {
 
-    using LibBytes for bytes;
+    using _LibBytes for bytes;
     bytes creationCode;
     bytes4 ctorSelector;
 
